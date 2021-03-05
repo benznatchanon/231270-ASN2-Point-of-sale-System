@@ -1,85 +1,120 @@
 <template>
-  <div>
-    <form @submit.prevent @keydown.enter.prevent="addItem">
+  <div class="scan">
+    <form @submit.prevent @keydown.enter.prevent="addItemManually">
       <fieldset>
         <legend>Scan</legend>
-        <input v-model="barcode" />
-        <button @click="addItem">Add</button>
+
+        <StreamBarcodeReader @decode="addItem"></StreamBarcodeReader>
+        <ImageBarcodeReader
+          @decode="addItem"
+          @error="onError"
+        ></ImageBarcodeReader>
+
+        <input v-model="barcode" type="text" placeholder="type code" />
+        <button @click.prevent="addItemManually">Add</button>
       </fieldset>
     </form>
-  </div>
-  <div>
-    <h1>Total: B{{ priceBaht(total) }}</h1>
-    <table>
-      <tr>
-        <th>Code</th>
-        <th>Product</th>
-        <th>Price</th>
-        <th>Quantity</th>
-      </tr>
-      <tr v-for="(item, idx) in lineItems" :key="item.barcode">
-        <td>{{ item.barcode }}</td>
-        <td>{{ item.name }}</td>
-        <td>B{{ priceBaht(item.priceSatang) }}</td>
-        <td>{{ item.quantity }}</td>
-        <td>
-          <button @click.prevent="decItem(idx)">-</button>
-          <button @click.prevent="incItem(idx)">+</button>
-        </td>
-      </tr>
-    </table>
+    <div>
+      <h1>Total: ฿{{ priceBaht(total) }}</h1>
+      <table>
+        <tr>
+          <th>Code</th>
+          <th>Product</th>
+          <th>Price</th>
+          <th>Quantity</th>
+        </tr>
+        <tr v-for="item in basket" :key="item.id">
+          <td>{{ item.barcode }}</td>
+          <td>{{ item.name }}</td>
+          <td>฿{{ priceBaht(item.priceSatang) }}</td>
+          <td>x{{ item.quantity }}</td>
+          <td>
+            <button @click.prevent="decItem(item.barcode)">-</button>
+            <button @click.prevent="incItem(item.barcode)">+</button>
+          </td>
+        </tr>
+      </table>
+    </div>
   </div>
 </template>
 
 <script lang="ts">
-import { findProductById, Product } from '@/_services/fake-db'
-import { sum } from 'lodash'
-import { Vue } from 'vue-class-component'
+import Vue from 'vue'
+import Component from 'vue-class-component'
+import { findIndex, sum } from 'lodash'
+import { Product } from '@/store/models'
+import { findProductById } from '@/_services/fake-db'
+import { StreamBarcodeReader, ImageBarcodeReader } from 'vue-barcode-reader'
 
-export default class Home extends Vue {
+@Component({
+  components: {
+    StreamBarcodeReader,
+    ImageBarcodeReader
+  }
+})
+export default class Scan extends Vue {
+  basket: Array<Product & { quantity: number }> = []
   barcode = ''
-  lineItems: Array<Product & { quantity: number }> = []
 
   get total (): number {
-    return sum(this.lineItems.map(item => item.priceSatang * item.quantity))
+    return sum(
+      this.basket.map(productWithQuantity => productWithQuantity.priceSatang * productWithQuantity.quantity)
+    )
   }
 
   priceBaht (priceSatang: number): string {
     return (priceSatang / 100.0).toLocaleString(undefined, { minimumFractionDigits: 2 })
   }
 
-  addItem (): void {
-    // Ignore empty barcodes
-    if (!this.barcode) return
+  addItemManually (): void {
+    const barcode = this.barcode
+    if (!barcode) return // Ignore empty barcodes
+    this.addItem(barcode)
+  }
 
-    // Create product line
-    const product = findProductById(this.barcode)
+  addItem (barcode: string) {
+    const index = findIndex(this.basket, item => item.barcode === barcode)
+
+    // Increment if already present
+    if (index >= 0) {
+      const item = this.basket[index]
+      item.quantity += 1
+      return
+    }
+
+    // Else create new line-item
+    const product = findProductById(barcode)
     const productWithQuantity = Object.assign(product, { quantity: 1 })
-    this.lineItems.unshift(productWithQuantity)
+    this.basket.unshift(productWithQuantity)
 
-    // Clear barcode
     this.barcode = ''
   }
 
-  incItem (index: number): void {
+  onError () {
+    console.log('Uploaded image could not be read')
+  }
+
+  incItem (barcode: string): void {
     // Ignore invalid indexes
-    if (index < 0 || index >= this.lineItems.length) return
+    const index = findIndex(this.basket, item => item.barcode === barcode)
+    if (index < 0 || index >= this.basket.length) return
 
     // Increment quantity
-    const item = this.lineItems[index]
+    const item = this.basket[index]
     item.quantity += 1
   }
 
-  decItem (index: number): void {
+  decItem (barcode: string): void {
     // Ignore invalid indexes
-    if (index < 0 || index >= this.lineItems.length) return
+    const index = findIndex(this.basket, item => item.barcode === barcode)
+    if (index < 0 || index >= this.basket.length) return
 
     // Decrement quantity
-    const item = this.lineItems[index]
+    const item = this.basket[index]
     item.quantity -= 1
 
     // Remove if 0
-    if (item.quantity <= 0) this.lineItems.splice(index, 1)
+    if (item.quantity <= 0) this.basket.splice(index, 1)
   }
 }
 </script>
@@ -87,6 +122,7 @@ export default class Home extends Vue {
 <style lang="scss" scoped>
 div {
   margin-bottom: 2rem;
+  text-align: center;
 }
 
 form {
