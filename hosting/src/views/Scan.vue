@@ -41,19 +41,20 @@
 <script lang="ts">
 import Vue from 'vue'
 import Component from 'vue-class-component'
-import { findIndex, sum } from 'lodash'
-import { Product } from '@/store/models'
-import { findProductById } from '@/_services/fake-db'
+import { sum } from 'lodash'
 import { StreamBarcodeReader, ImageBarcodeReader } from 'vue-barcode-reader'
+import { mapState } from 'vuex'
+import { Product } from '@/store/models'
 
 @Component({
   components: {
     StreamBarcodeReader,
     ImageBarcodeReader
-  }
+  },
+  computed: mapState(['basket'])
 })
 export default class Scan extends Vue {
-  basket: Array<Product & { quantity: number }> = []
+  basket!: Array<Product & { quantity: number }>
   barcode = ''
 
   get total (): number {
@@ -73,20 +74,7 @@ export default class Scan extends Vue {
   }
 
   addItem (barcode: string) {
-    const index = findIndex(this.basket, item => item.barcode === barcode)
-
-    // Increment if already present
-    if (index >= 0) {
-      const item = this.basket[index]
-      item.quantity += 1
-      return
-    }
-
-    // Else create new line-item
-    const product = findProductById(barcode)
-    const productWithQuantity = Object.assign(product, { quantity: 1 })
-    this.basket.unshift(productWithQuantity)
-
+    this.$store.commit('addItem', barcode)
     this.barcode = ''
   }
 
@@ -95,26 +83,11 @@ export default class Scan extends Vue {
   }
 
   incItem (barcode: string): void {
-    // Ignore invalid indexes
-    const index = findIndex(this.basket, item => item.barcode === barcode)
-    if (index < 0 || index >= this.basket.length) return
-
-    // Increment quantity
-    const item = this.basket[index]
-    item.quantity += 1
+    this.$store.commit('incItem', barcode)
   }
 
   decItem (barcode: string): void {
-    // Ignore invalid indexes
-    const index = findIndex(this.basket, item => item.barcode === barcode)
-    if (index < 0 || index >= this.basket.length) return
-
-    // Decrement quantity
-    const item = this.basket[index]
-    item.quantity -= 1
-
-    // Remove if 0
-    if (item.quantity <= 0) this.basket.splice(index, 1)
+    this.$store.commit('decItem', barcode)
   }
 }
 </script>
