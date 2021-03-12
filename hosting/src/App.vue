@@ -1,10 +1,22 @@
 <template>
   <div id="app">
-    <div id="nav">
-      <router-link to="/">BECPoSS</router-link> |
-      <router-link to="/scan">Scan</router-link> |
-      <router-link to="/basket">Basket</router-link>
-    </div>
+    <b-navbar class="is-primary">
+      <template #brand>
+        <b-navbar-item tag="router-link" :to="{ name: 'Home' }">
+          BECPoSS
+        </b-navbar-item>
+      </template>
+
+      <template #end>
+        <b-navbar-item tag="router-link" :to="{ name: 'Scan' }">
+          Scan
+        </b-navbar-item>
+        <b-navbar-item tag="router-link" :to="{ name: 'Basket' }">
+          Basket
+        </b-navbar-item>
+      </template>
+    </b-navbar>
+
     <router-view />
   </div>
 </template>

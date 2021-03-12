@@ -1,10 +1,14 @@
 import Vue from 'vue'
+import Buefy from 'buefy'
 import { firestorePlugin } from 'vuefire'
 import App from './App.vue'
 import router from './router'
 import store from './store'
+import '@mdi/font/css/materialdesignicons.css'
+import '@/scss/main.scss'
 
 Vue.config.productionTip = false
+Vue.use(Buefy)
 Vue.use(firestorePlugin)
 
 new Vue({

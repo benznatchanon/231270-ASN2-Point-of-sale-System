@@ -1,39 +1,82 @@
 <template>
   <div class="scan">
-    <form @submit.prevent @keydown.enter.prevent="addItemManually">
-      <fieldset>
-        <legend>Scan</legend>
+    <div class="section">
+      <div class="container">
+        <form @submit.prevent @keydown.enter.prevent="addItemManually">
+          <StreamBarcodeReader
+            @decode="addItem"
+            class="scanner"
+          ></StreamBarcodeReader>
 
-        <StreamBarcodeReader @decode="addItem"></StreamBarcodeReader>
-        <ImageBarcodeReader
-          @decode="addItem"
-          @error="onError"
-        ></ImageBarcodeReader>
+          <div class="columns">
+            <div class="column is-half is-full-mobile">
+              <ImageBarcodeReader
+                class="input"
+                @decode="addItem"
+                @error="onError"
+              ></ImageBarcodeReader>
+            </div>
+            <div class="column is-half is-full-mobile">
+              <b-field>
+                <b-input
+                  v-model="barcode"
+                  type="txet"
+                  placeholder="type code"
+                  expanded
+                />
+                <p class="control">
+                  <b-button @click.prevent="addItemManually">Add</b-button>
+                </p>
+              </b-field>
+            </div>
+          </div>
+        </form>
+      </div>
+    </div>
 
-        <input v-model="barcode" type="text" placeholder="type code" />
-        <button @click.prevent="addItemManually">Add</button>
-      </fieldset>
-    </form>
-    <div>
-      <h1>Total: ฿{{ priceBaht(total) }}</h1>
-      <table>
-        <tr>
-          <th>Code</th>
-          <th>Product</th>
-          <th>Price</th>
-          <th>Quantity</th>
-        </tr>
-        <tr v-for="item in basket" :key="item.id">
-          <td>{{ item.barcode }}</td>
-          <td>{{ item.name }}</td>
-          <td>฿{{ priceBaht(item.priceSatang) }}</td>
-          <td>x{{ item.quantity }}</td>
-          <td>
-            <button @click.prevent="decItem(item.barcode)">-</button>
-            <button @click.prevent="incItem(item.barcode)">+</button>
-          </td>
-        </tr>
-      </table>
+    <div class="section">
+      <div class="container">
+        <h1 class="title has-text-right">Total: ฿{{ priceBaht(total) }}</h1>
+        <b-table :data="$store.state.basket">
+          <div slot="empty"><em>No items in basket</em></div>
+          <b-table-column field="barcode" label="Code" v-slot="props">
+            {{ props.row.barcode }}
+          </b-table-column>
+          <b-table-column field="name" label="Product" v-slot="props">
+            {{ props.row.name }}
+          </b-table-column>
+          <b-table-column
+            field="priceSatang"
+            label="Price"
+            numeric
+            v-slot="props"
+          >
+            ฿{{ priceBaht(props.row.priceSatang) }}
+          </b-table-column>
+          <b-table-column
+            field="quantity"
+            label="Quantity"
+            numeric
+            v-slot="props"
+          >
+            x{{ props.row.quantity }}
+          </b-table-column>
+          <b-table-column label="Adjust" centered v-slot="props">
+            <b-field>
+              <b-button
+                class="button-left"
+                @click.prevent="decItem(props.row.barcode)"
+                icon-left="minus"
+              ></b-button>
+              <b-button
+                class="button-right"
+                @click.prevent="incItem(props.row.barcode)"
+                icon-left="plus"
+              ></b-button>
+            </b-field>
+          </b-table-column>
+        </b-table>
+      </div>
     </div>
   </div>
 </template>
@@ -93,32 +136,18 @@ export default class Scan extends Vue {
 </script>
 
 <style lang="scss" scoped>
-div {
-  margin-bottom: 2rem;
-  text-align: center;
-}
-
-form {
-  display: inline-block;
-}
-
-table {
+.scanner {
+  max-width: 600px;
   margin: 0 auto;
-  border-collapse: separate;
-  border-spacing: 0.4rem 0.4rem;
 }
 
-td {
-  padding: 1.2rem 2rem;
-  background-color: #f5f5f5;
+.button-left {
+  margin-left: auto;
+  margin-right: 0.25rem;
 }
 
-td button {
-  width: 1.75rem;
-  height: 1.75rem;
-}
-
-td button:not(:last-child) {
-  margin-right: 0.5rem;
+.button-right {
+  margin-left: 0.25rem;
+  margin-right: auto;
 }
 </style>

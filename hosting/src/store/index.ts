@@ -47,6 +47,7 @@ const store = new Vuex.Store<PossStore>({
       // Increment quantity
       const item = state.basket[index]
       item.quantity += 1
+      Vue.set(state.basket, index, item)
     },
     decItem: (state, barcode: string): void => {
       // Ignore invalid indexes
@@ -59,6 +60,7 @@ const store = new Vuex.Store<PossStore>({
 
       // Remove if 0
       if (item.quantity <= 0) state.basket.splice(index, 1)
+      else Vue.set(state.basket, index, item)
     }
   },
   actions: {
